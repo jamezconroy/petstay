@@ -23,6 +23,19 @@ func retrieve(id int) (post Post, err error) {
 	return
 }
 
+func retrievePet(id int) (pet Pet, err error) {
+	pet = Pet{}
+	err = Db.QueryRow("select id, name, owner from pet where id = $1", id).Scan(&pet.Id, &pet.Name, &pet.Owner)
+	return
+}
+
+func retrievePets(offset int, limit int) (pet Pet, err error) {
+	//pets = []Pet
+	//err = Db.Query("select id, name, owner from pet offset $1 limit $2", offset, limit)
+	return
+}
+
+
 // Create a new post
 func (post *Post) create() (err error) {
 	statement := "insert into posts (content, author) values ($1, $2) returning id"
@@ -32,6 +45,17 @@ func (post *Post) create() (err error) {
 	}
 	defer stmt.Close()
 	err = stmt.QueryRow(post.Content, post.Author).Scan(&post.Id)
+	return
+}
+
+func (pet *Pet) create() (err error) {
+	statement := "insert into pet (name, owner) values ($1, $2) returning id"
+	stmt, err := Db.Prepare(statement)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(pet.Name, pet.Owner).Scan(&pet.Id)
 	return
 }
 

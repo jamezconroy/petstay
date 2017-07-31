@@ -15,13 +15,19 @@ type Post struct {
 	Author  string `json:"author"`
 }
 
+type Pet struct {
+	Id      int    `json:"id"`
+	Name    string `json:"name"`
+	Owner   string `json:"owner"`
+}
+
 
 //var Db *sql.DB
 
 // connect to the Db
 func init() {
 	var err error
-	Db, err = sql.Open("postgres", "user=gwp dbname=gwp password=gwp sslmode=disable")
+	Db, err = sql.Open("postgres", "user=fido dbname=petstay password=woof sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
@@ -32,10 +38,42 @@ func main() {
 		Addr: ":9088",
 	}
 	http.HandleFunc("/post/", handleRequest)
+	http.HandleFunc("/pet/", handlePetRequest)
+	http.HandleFunc("/pets", handlePetsRequest)
 	server.ListenAndServe()
 }
 
 // main handler function
+func handlePetRequest(w http.ResponseWriter, r *http.Request) {
+	var err error
+	switch r.Method {
+	case "GET":
+		err = handleGetPet(w, r)
+	case "POST":
+		err = handlePostPet(w, r)
+	case "PUT":
+		err = handlePut(w, r)
+	case "DELETE":
+		err = handleDelete(w, r)
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func handlePetsRequest(w http.ResponseWriter, r *http.Request) {
+	var err error
+	switch r.Method {
+	case "GET":
+		err = handleGetPets(w, r)
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch r.Method {
@@ -74,6 +112,45 @@ func handleGet(w http.ResponseWriter, r *http.Request) (err error) {
 	return
 }
 
+func handleGetPet(w http.ResponseWriter, r *http.Request) (err error) {
+	id, err := strconv.Atoi(path.Base(r.URL.Path))
+	if err != nil {
+		return
+	}
+	pet, err := retrievePet(id)
+	if err != nil {
+		return
+	}
+	output, err := json.MarshalIndent(&pet, "", "\t\t")
+	if err != nil {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(output)
+	return
+}
+
+func handleGetPets(w http.ResponseWriter, r *http.Request) (err error) {
+	//id, err := strconv.Atoi(path.Base(r.URL.Path))
+	//if err != nil {
+	//	return
+	//}
+	//TODO: how to read offset and limit from query string
+	offset := 1
+	limit := 3
+	pets, err := retrievePets(offset, limit)
+	if err != nil {
+		return
+	}
+	output, err := json.MarshalIndent(&pets, "", "\t\t")
+	if err != nil {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(output)
+	return
+}
+
 // Create a post
 // POST /post/
 func handlePost(w http.ResponseWriter, r *http.Request) (err error) {
@@ -83,6 +160,20 @@ func handlePost(w http.ResponseWriter, r *http.Request) (err error) {
 	var post Post
 	json.Unmarshal(body, &post)
 	err = post.create()
+	if err != nil {
+		return
+	}
+	w.WriteHeader(200)
+	return
+}
+
+func handlePostPet(w http.ResponseWriter, r *http.Request) (err error) {
+	len := r.ContentLength
+	body := make([]byte, len)
+	r.Body.Read(body)
+	var pet Pet
+	json.Unmarshal(body, &pet)
+	err = pet.create()
 	if err != nil {
 		return
 	}
