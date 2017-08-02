@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
+	"log"
 )
 
 var Db *sql.DB
@@ -29,12 +30,29 @@ func retrievePet(id int) (pet Pet, err error) {
 	return
 }
 
-func retrievePets(offset int, limit int) (pet Pet, err error) {
-	//pets = []Pet
-	//err = Db.Query("select id, name, owner from pet offset $1 limit $2", offset, limit)
+func retrievePets(offset int, limit int) (pets []Pet, err error) {
+
+	rows, err := Db.Query("select id, name, owner from pet offset $1 limit $2", offset, limit)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pet Pet
+		err := rows.Scan(&pet.Id, &pet.Name, &pet.Owner)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println(pet.Id, pet.Name, pet.Owner)
+		pets = append(pets, pet)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
 	return
 }
-
 
 // Create a new post
 func (post *Post) create() (err error) {
