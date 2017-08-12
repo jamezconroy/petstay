@@ -83,8 +83,19 @@ func (post *Post) update() (err error) {
 	return
 }
 
+func (pet *Pet) updatePet() (err error) {
+	_, err = Db.Exec("update pet set name = $2, owner = $3 where id = $1", pet.Id, pet.Name, pet.Owner)
+	return
+}
+
+
 // Delete a post
 func (post *Post) delete() (err error) {
 	_, err = Db.Exec("delete from posts where id = $1", post.Id)
+	return
+}
+
+func (pet *Pet) deletePet() (err error) {
+	_, err = Db.Exec("delete from pet where id = $1", pet.Id)
 	return
 }

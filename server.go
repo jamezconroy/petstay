@@ -27,6 +27,7 @@ type Pet struct {
 	Owner   string `json:"owner"`
 }
 
+var skipAuth  = false
 
 // connect to the Db
 func init() {
@@ -44,9 +45,11 @@ func main() {
 	r.Handle("/", http.FileServer(http.Dir("./views/")))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
-	r.Handle("/pet/{id}", authMiddleware(GetPetHandler)).Methods("GET")
 	r.Handle("/pets", authMiddleware(GetPetsHandler)).Methods("GET")
 	r.Handle("/pet", authMiddleware(PostPetHandler)).Methods("POST")
+	r.Handle("/pet/{id}", authMiddleware(GetPetHandler)).Methods("GET")
+	r.Handle("/pet/{id}", authMiddleware(PutPetHandler)).Methods("PUT")
+	r.Handle("/pet/{id}", authMiddleware(DeletePetHandler)).Methods("DELETE")
 
 	http.ListenAndServe(":3000", handlers.LoggingHandler(os.Stdout, r))
 
@@ -54,6 +57,11 @@ func main() {
 
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if skipAuth {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		// JC: these are from Auth0 management console
 		secret := []byte("pwsy9HvbACAKQYlw1Rp1EAL6ej2OfCZ3")
@@ -71,7 +79,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			fmt.Println(err)
 			fmt.Println("Token is not valid:", token)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
+			w.Write([]byte("Unauthorized\n"))
 		} else {
 			next.ServeHTTP(w, r)
 		}
@@ -128,6 +136,48 @@ var PostPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 	var pet Pet
 	json.Unmarshal(body, &pet)
 	err := pet.create()
+	if err != nil {
+		return
+	}
+	w.WriteHeader(200)
+	return
+})
+
+var PutPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		return
+	}
+	pet, err := retrievePet(id)
+	if err != nil {
+		return
+	}
+	len := r.ContentLength
+	body := make([]byte, len)
+	r.Body.Read(body)
+	json.Unmarshal(body, &pet)
+	err = pet.updatePet()
+	if err != nil {
+		return
+	}
+	w.WriteHeader(200)
+	return
+})
+
+var DeletePetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		return
+	}
+	pet, err := retrievePet(id)
+	if err != nil {
+		return
+	}
+	err = pet.deletePet()
 	if err != nil {
 		return
 	}

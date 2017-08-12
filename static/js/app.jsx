@@ -97,8 +97,8 @@ var LoggedIn = React.createClass({
     return (
       <div className="col-lg-12">
         <span className="pull-right"><a onClick={this.logout}>Log out</a></span>
-        <h2>Welcome to We R VR</h2>
-        <p>Below you'll find the latest games that need feedback. Please provide honest feedback so developers can make the best games.</p>
+        <h2>Welcome to Avoca Petstay</h2>
+        <p>Below you'll find details on all our pet visitors.</p>
         <div className="row">
           
         {this.state.pets.map(function(pet, i){
