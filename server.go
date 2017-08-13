@@ -4,7 +4,6 @@ import (
 	_ "github.com/lib/pq"
 	"encoding/json"
 	"net/http"
-	"path"
 	"strconv"
 	"database/sql"
 	"github.com/gorilla/mux"
@@ -12,7 +11,7 @@ import (
 	"os"
 	"github.com/auth0-community/auth0"
 	"fmt"
-	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
 type Post struct {
@@ -27,7 +26,7 @@ type Pet struct {
 	Owner   string `json:"owner"`
 }
 
-var skipAuth  = false
+var skipAuth  = true
 
 // connect to the Db
 func init() {
@@ -84,25 +83,6 @@ func authMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		}
 	})
-}
-
-// main handler function
-func handlePetRequest(w http.ResponseWriter, r *http.Request) {
-	var err error
-	switch r.Method {
-	case "GET":
-		//err = handleGetPet(w, r)
-	case "POST":
-		err = handlePostPet(w, r)
-	case "PUT":
-		err = handlePut(w, r)
-	case "DELETE":
-		err = handleDelete(w, r)
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 var GetPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -222,64 +202,3 @@ var GetPetsHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 	return
 
 })
-
-
-// Create a post
-// POST /post/
-
-func handlePostPet(w http.ResponseWriter, r *http.Request) (err error) {
-	len := r.ContentLength
-	body := make([]byte, len)
-	r.Body.Read(body)
-	var pet Pet
-	json.Unmarshal(body, &pet)
-	err = pet.create()
-	if err != nil {
-		return
-	}
-	w.WriteHeader(200)
-	return
-}
-
-// Update a post
-// PUT /post/1
-func handlePut(w http.ResponseWriter, r *http.Request) (err error) {
-	id, err := strconv.Atoi(path.Base(r.URL.Path))
-	if err != nil {
-		return
-	}
-	post, err := retrieve(id)
-	if err != nil {
-		return
-	}
-	len := r.ContentLength
-	body := make([]byte, len)
-	r.Body.Read(body)
-	json.Unmarshal(body, &post)
-	err = post.update()
-	if err != nil {
-		return
-	}
-	w.WriteHeader(200)
-	return
-}
-
-// Delete a post
-// DELETE /post/1
-func handleDelete(w http.ResponseWriter, r *http.Request) (err error) {
-	id, err := strconv.Atoi(path.Base(r.URL.Path))
-	if err != nil {
-		return
-	}
-	post, err := retrieve(id)
-	if err != nil {
-		return
-	}
-	err = post.delete()
-	if err != nil {
-		return
-	}
-	w.WriteHeader(200)
-	return
-}
-
