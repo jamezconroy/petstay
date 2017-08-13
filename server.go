@@ -13,6 +13,17 @@ import (
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
 	"time"
+	"log"
+	"io"
+
+	"io/ioutil"
+)
+
+var (
+	Trace   *log.Logger
+	Info    *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
 )
 
 type Pet struct {
@@ -85,7 +96,32 @@ func init() {
 	}
 }
 
+func InitLog(
+	traceHandle io.Writer,
+	infoHandle io.Writer,
+	warningHandle io.Writer,
+	errorHandle io.Writer) {
+
+	Trace = log.New(traceHandle,
+		"TRACE: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Info = log.New(infoHandle,
+		"INFO: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Warning = log.New(warningHandle,
+		"WARNING: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Error = log.New(errorHandle,
+		"ERROR: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 func main() {
+
+	InitLog(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	r := mux.NewRouter()
 
@@ -126,7 +162,8 @@ func authMiddleware(next http.Handler) http.Handler {
 		token, err := validator.ValidateRequest(r)
 
 		if err != nil {
-			fmt.Println(err)
+			Error.Println(err)
+			//fmt.Println(err)
 			fmt.Println("Token is not valid:", token)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized\n"))
@@ -141,16 +178,19 @@ var GetPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
+		Error.Println("Unable to determine pet id")
 		return
 	}
 
 	pet, err := retrievePet(id)
 	if err != nil {
+		Error.Println("Error retrieving pet data")
 		return
 	}
 
 	output, err := json.MarshalIndent(&pet, "", "\t\t")
 	if err != nil {
+		Error.Println("Unable to marshall JSON data")
 		return
 	}
 
@@ -168,6 +208,7 @@ var PostPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 	json.Unmarshal(body, &pet)
 	err := pet.create()
 	if err != nil {
+		Error.Println("Unable to create pet record")
 		return
 	}
 	w.WriteHeader(200)
@@ -183,6 +224,7 @@ var PutPetHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 	}
 	pet, err := retrievePet(id)
 	if err != nil {
+		Error.Println("Unable to update pet record")
 		return
 	}
 	len := r.ContentLength
