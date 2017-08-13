@@ -1,0 +1,7 @@
+curl -i -X GET http://127.0.0.1:9088/pet/1
+
+curl -i -X GET http://127.0.0.1:9088/pets?offset=1&limit=3
+
+
+# Multiple
+curl -i -X GET "http://127.0.0.1:3000/pet1?offset=0&limit=2"

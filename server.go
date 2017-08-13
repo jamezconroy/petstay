@@ -12,18 +12,66 @@ import (
 	"github.com/auth0-community/auth0"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
+	"time"
 )
-
-type Post struct {
-	Id      int    `json:"id"`
-	Content string `json:"content"`
-	Author  string `json:"author"`
-}
 
 type Pet struct {
 	Id      int    `json:"id"`
 	Name    string `json:"name"`
 	Owner   string `json:"owner"`
+}
+
+type Pet1 struct {
+	Id      int    `json:"id"`
+	PetName    string `json:"petName"`
+	PetTypeBreed   string `json:"typeBreed"`
+	PetAge   string `json:"age"`
+	PetDescription   string `json:"description"`
+	OwnerName   string `json:"ownerName"`
+	OwnerAddress   string `json:"ownerAddress"`
+	OwnerPhone   string `json:"ownerPhone"`
+	OwnerEmail   string `json:"ownerEmail"`
+	OwnerPreferredContact   string `json:"preferredContact"`
+	VetName   string `json:"vetName"`
+	VetAddress   string `json:"vetAddress"`
+	VetPhone   string `json:"vetPhone"`
+	VetEmail   string `json:"vetEmail"`
+	EmergencyProcedure   string `json:"emergencyProcedure"`
+	PetFeedingTimes   string `json:"petFeedingTimes"`
+	PetFoodAndQuantity   string `json:"petFoodAndQuantity"`
+	PetAllowedTreats   string `json:"petAllowedTreats"`
+	PetSleepLocation   string `json:"petSleepLocation"`
+	PetBedtime   string `json:"petBedtime"`
+	PetSleepingHabits   string `json:"petSleepingHabits"`
+	PetOkWithKidsAndOtherAnimals   string `json:"petOkWithKidsAndOtherAnimals"`
+	PetOkOffLeash   string `json:"petOkOffLeash"`
+	PetSicknessHistory   string `json:"petSicknessHistory"`
+	PetDesexed   string `json:"petDesexed"`
+	PetVaccinated   string `json:"petVaccinated"`
+	PetToiletTrained   string `json:"petToiletTrained"`
+	PetChews   string `json:"petChews"`
+	OwnerHappyToReimburse   string `json:"ownerHappyToReimburse"`
+	PetAnxieties   string `json:"petAnxieties"`
+	PetDisallowedActivities   string `json:"petDisallowedActivities"`
+	PetOtherDetails   string `json:"petOtherDetails"`
+}
+
+type Stay struct {
+	Id      int    `json:"id"`
+	PetId    int `json:"petId"`
+	FromDate    time.Time `json:"fromDate"`
+	ToDate    time.Time `json:"toDate"`
+	Rate    float64 `json:"rate"`
+	OtherFee1    float64 `json:"otherFee1"`
+	OtherFeeType1    string `json:"otherFeeType1"`
+	OtherFee2    float64 `json:"otherFee2"`
+	OtherFeeType2    string `json:"otherFeeType2"`
+	OtherFee3    float64 `json:"otherFee3"`
+	OtherFeeType3    string `json:"otherFeeType3"`
+	Discount    float64 `json:"discount"`
+	DiscountReason    string `json:"discountReason"`
+	TotalCharged    float64 `json:"totalCharged"`
+	TotalPaid    float64 `json:"totalPaid"`
 }
 
 var skipAuth  = true
@@ -49,6 +97,9 @@ func main() {
 	r.Handle("/pet/{id}", authMiddleware(GetPetHandler)).Methods("GET")
 	r.Handle("/pet/{id}", authMiddleware(PutPetHandler)).Methods("PUT")
 	r.Handle("/pet/{id}", authMiddleware(DeletePetHandler)).Methods("DELETE")
+
+	r.Handle("/pets1", authMiddleware(GetPetsHandler1)).Methods("GET")
+	r.Handle("/pet1", authMiddleware(PostPetHandler1)).Methods("POST")
 
 	http.ListenAndServe(":3000", handlers.LoggingHandler(os.Stdout, r))
 
@@ -201,4 +252,56 @@ var GetPetsHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 	w.Write(output)
 	return
 
+})
+var GetPetsHandler1 = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	vals := r.URL.Query()
+	offsets :=  vals["offset"]
+
+	offset := 0
+	if offsets != nil {
+		offset1, err := strconv.Atoi(offsets[0])
+		if err != nil {
+			return
+		}
+		offset = offset1
+	}
+	limits :=  vals["limit"]
+
+	limit := 1
+	if limits != nil {
+		limit1, err := strconv.Atoi(limits[0])
+		if err != nil {
+			return
+		}
+		limit = limit1
+	}
+
+	pets, err := retrievePets1(offset, limit)
+	if err != nil {
+		return
+	}
+	output, err := json.MarshalIndent(&pets, "", "\t\t")
+	if err != nil {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(output)
+	return
+
+})
+
+var PostPetHandler1 = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	len := r.ContentLength
+	body := make([]byte, len)
+	r.Body.Read(body)
+	var pet Pet1
+	json.Unmarshal(body, &pet)
+	err := pet.create()
+	if err != nil {
+		return
+	}
+	w.WriteHeader(200)
+	return
 })

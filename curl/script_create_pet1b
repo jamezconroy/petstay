@@ -1,0 +1,1 @@
+curl -i -X POST -H "Content-Type: application/json"  -d '{"petName":"Shaun-the-horse1","typeBreed":"xxx","age":"xxx","description":"xxx","ownerName":"xxx","ownerAddress":"xxx"}' http://127.0.0.1:3000/pet1
